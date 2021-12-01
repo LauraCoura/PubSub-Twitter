@@ -34,7 +34,6 @@ public class Client {
             s.close();
             return response;
         } catch (Exception e) {
-            System.out.println("Client cannot send/receive a message: " + msg.getContent());
             return null;
         }
     }

@@ -3,6 +3,7 @@ package pub;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.CopyOnWriteArrayList;
+
 import core.Message;
 import core.MessageImpl;
 import core.PubSubCommand;
@@ -10,7 +11,8 @@ import core.client.Client;
 
 public class PubCommand implements PubSubCommand {
     @Override
-    public Message execute(Message m, SortedSet<Message> log, Set<String> subscribers, boolean isPrimary, String secondaryServerAddress, int secondaryServerPort){
+    public Message execute(Message m, SortedSet<Message> log, Set<String> subscribers, boolean isPrimary, String sencondaryServerAddress, int secondaryServerPort) {
+
         Message response = new MessageImpl();
         int logId = m.getLogId();
         logId++;
@@ -18,42 +20,33 @@ public class PubCommand implements PubSubCommand {
         response.setLogId(logId);
         m.setLogId(logId);
 
-        if (secondaryServerAddress != null & secondaryServerPort != -1) {
-            try {
-                // Sincronizando com o broker de backup
-                Message syncPubMsg = new MessageImpl();
-                syncPubMsg.setBrokerId(m.getBrokerId());
-                syncPubMsg.setContent(m.getContent());
-                syncPubMsg.setLogId(m.getLogId());
-                syncPubMsg.setType("syncPub");
+        try {
+            //sincronizar com o broker backup
+            Message syncPubMsg = new MessageImpl();
+            syncPubMsg.setBrokerId(m.getBrokerId());
+            syncPubMsg.setContent(m.getContent());
+            syncPubMsg.setLogId(m.getLogId());
+            syncPubMsg.setType("syncPub");
 
-                Client clientBackup = new Client(secondaryServerAddress, secondaryServerPort);
-                syncPubMsg = clientBackup.sendReceive(syncPubMsg);
-                System.out.println(syncPubMsg.getContent());
+            Client clientBackup = new Client(sencondaryServerAddress, secondaryServerPort);
+            syncPubMsg = clientBackup.sendReceive(syncPubMsg);
+            System.out.println(syncPubMsg.getContent());
 
-            } catch (Exception e) {
-                System.out.println("Cannot sync with backup - publish service");
-            }
+        } catch (Exception e) {
+            System.out.println("Cannot sync with backup - publish service");
         }
 
         log.add(m);
-
 
         Message msg = new MessageImpl();
         msg.setContent(m.getContent());
         msg.setLogId(logId);
         msg.setType("notify");
 
-        CopyOnWriteArrayList<String> subscribersCopy = new CopyOnWriteArrayList<String>();
-        subscribersCopy.addAll(subscribers);
+        CopyOnWriteArrayList<String> subscribersCopy = new CopyOnWriteArrayList<>(subscribers);
         for (String aux : subscribersCopy) {
             String[] ipAndPort = aux.split(":");
-            Client client = null;
-            try {
-                client = new Client(ipAndPort[0], Integer.parseInt(ipAndPort[1]));
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            Client client = new Client(ipAndPort[0], Integer.parseInt(ipAndPort[1]));
             msg.setBrokerId(m.getBrokerId());
             Message cMsg = client.sendReceive(msg);
             if (cMsg == null) {
@@ -62,7 +55,7 @@ public class PubCommand implements PubSubCommand {
             }
         }
 
-        response.setContent("Mensagem publicada: " + m.getContent());
+        response.setContent("Message published: " + m.getContent());
         response.setType("pub_ack");
 
         return response;

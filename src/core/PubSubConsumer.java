@@ -10,53 +10,48 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-// The useful socket consumer
+//the useful socket consumer
 public class PubSubConsumer<S extends Socket> extends GenericConsumer<S> {
 
     private int uniqueLogId;
-    private SortedSet<Message> log;
-    private Set<String> subscribers;
-    private boolean isPrimary;
-    private String secondaryServer;
-    private int secondaryPort;
+    private final SortedSet<Message> log;
+    private final Set<String> subscribers;
+    private final boolean isPrimary;
+    private final String secondaryServer;
+    private final int secondaryPort;
 
     public PubSubConsumer(GenericResource<S> re, boolean isPrimary, String secondaryServer, int secondaryPort) {
         super(re);
         uniqueLogId = 1;
-        log = new TreeSet<Message>(new MessageComparator());
-        subscribers = new TreeSet<String>();
+        log = new TreeSet<>(new MessageComparator());
+        subscribers = new TreeSet<>();
 
         this.isPrimary = isPrimary;
         this.secondaryServer = secondaryServer;
         this.secondaryPort = secondaryPort;
     }
 
+
     @Override
     protected void doSomething(S str) {
         try {
+            // TODO Auto-generated method stub
             ObjectInputStream in = new ObjectInputStream(str.getInputStream());
 
             Message msg = (Message) in.readObject();
 
-            Message response = null;
+            Message response;
 
-            if (!isPrimary && msg.getType().equals("turn")){
-                this.isPrimary = true;
-                this.secondaryServer = null;
-                this.secondaryPort = -1;
-                turnPrimary(msg);
-            }
+            if (!isPrimary && !msg.getType().startsWith("sync")) {
 
-            if (!isPrimary && !msg.getType().startsWith("sync") && !msg.getType().equals("msgSync")) {
-                // Client client = new Client(secondaryServer, secondaryPort);
-                // response = client.sendReceive(msg);
+                //Client client = new Client(secondaryServer, secondaryPort);
+                //response = client.sendReceive(msg);
 
                 response = new MessageImpl();
                 response.setType("backup");
                 response.setContent(secondaryServer + ":" + secondaryPort);
 
-            } 
-			else {
+            } else {
                 if (!msg.getType().equals("notify") && !msg.getType().startsWith("sync"))
                     msg.setLogId(uniqueLogId);
 
@@ -77,26 +72,14 @@ public class PubSubConsumer<S extends Socket> extends GenericConsumer<S> {
         } catch (Exception e) {
             try {
                 str.close();
-            } catch (IOException ex) {
-                ex.printStackTrace();
+            } catch (IOException e1) {
+                // TODO Auto-generated catch block
+                e1.printStackTrace();
             }
         }
     }
 
     public List<Message> getMessages() {
-        CopyOnWriteArrayList<Message> logCopy = new CopyOnWriteArrayList<Message>();
-        logCopy.addAll(log);
-
-        return logCopy;
-    }
-
-    public void turnPrimary(Message msg) {
-        System.out.println("\nO primário caiu. Me tornando primário!");
-        turnPrimary();
-    }
-
-    public void turnPrimary() {
-        this.uniqueLogId = this.log.last().getLogId();
-        this.isPrimary = true;
+        return new CopyOnWriteArrayList<>(log);
     }
 }

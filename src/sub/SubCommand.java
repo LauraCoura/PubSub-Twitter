@@ -3,15 +3,15 @@ package sub;
 import java.util.Iterator;
 import java.util.Set;
 import java.util.SortedSet;
+
 import core.Message;
 import core.MessageImpl;
 import core.PubSubCommand;
 import core.client.Client;
 
 public class SubCommand implements PubSubCommand {
-
     @Override
-    public Message execute(Message m, SortedSet<Message> log, Set<String> subscribers, boolean isPrimary, String secondaryServerAddress, int secondaryServerPort) {
+    public Message execute(Message m, SortedSet<Message> log, Set<String> subscribers, boolean isPrimary, String sencondaryServerAddress, int secondaryServerPort) {
 
         Message response = new MessageImpl();
 
@@ -24,22 +24,20 @@ public class SubCommand implements PubSubCommand {
             response.setLogId(logId);
             m.setLogId(logId);
 
-            if (secondaryServerAddress != null & secondaryServerPort != -1) {
-                try {
-                    // Sincronizar com o broker de backup
-                    Message syncSubMsg = new MessageImpl();
-                    syncSubMsg.setBrokerId(m.getBrokerId());
-                    syncSubMsg.setContent(m.getContent());
-                    syncSubMsg.setLogId(m.getLogId());
-                    syncSubMsg.setType("syncSub");
+            try {
+                //sincronizar com o broker backup
+                Message syncSubMsg = new MessageImpl();
+                syncSubMsg.setBrokerId(m.getBrokerId());
+                syncSubMsg.setContent(m.getContent());
+                syncSubMsg.setLogId(m.getLogId());
+                syncSubMsg.setType("syncSub");
 
-                    Client clientBackup = new Client(secondaryServerAddress, secondaryServerPort);
-                    syncSubMsg = clientBackup.sendReceive(syncSubMsg);
-                    System.out.println(syncSubMsg.getContent());
+                Client clientBackup = new Client(sencondaryServerAddress, secondaryServerPort);
+                syncSubMsg = clientBackup.sendReceive(syncSubMsg);
+                System.out.println(syncSubMsg.getContent());
 
-                } catch (Exception e) {
-                    System.out.println("Cannot sync with backup - subscribe service");
-                }
+            } catch (Exception e) {
+                System.out.println("Cannot sync with backup - subscribe service");
             }
 
             subscribers.add(m.getContent());
@@ -54,12 +52,7 @@ public class SubCommand implements PubSubCommand {
                 Iterator<Message> it = log.iterator();
                 String[] ipAndPort = m.getContent().split(":");
                 while (it.hasNext()) {
-                    Client client = null;
-                    try {
-                        client = new Client(ipAndPort[0], Integer.parseInt(ipAndPort[1]));
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+                    Client client = new Client(ipAndPort[0], Integer.parseInt(ipAndPort[1]));
                     Message msg = it.next();
                     Message aux = new MessageImpl();
                     aux.setType("notify");

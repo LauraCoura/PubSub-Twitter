@@ -1,204 +1,158 @@
 package appl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
-import java.net.InetAddress;
-import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
 
 import core.Message;
 
 public class OneAppl {
-    public static String managerIp = "localhost";
-    public static int    managerPort = 8080;
-    public        String[] resources = {"var X", "var Y", "var Z"};
-    public        String identifier;
 
-    public        String internalIp;
-    private       Scanner reader;
-
-
-    public OneAppl() throws Exception {
+    public OneAppl() {
         PubSubClient client = new PubSubClient();
         client.startConsole();
     }
 
-    public OneAppl(boolean flag) throws Exception {
-        reader = new Scanner(System.in);
-        System.out.print("Enter the Client port number: ");
-        int clientPort = reader.nextInt();
-
-        System.out.print("Enter the identifier name: ");
-        identifier = reader.next();
-
-        ArrayList<String> vars = new ArrayList<String>();
-
-        for (int i = 0; i < 10; i++) {
-            Random rand = new Random();
-            int r = rand.nextInt(resources.length);
-            vars.add(resources[r]);
+    public OneAppl(int numberOfClients, int numberOfAccess, String clientAddress, int clientPort, String brokerAddress, int brokerPort) {
+        // Criando os clientes
+        List<PubSubClient> clients = new ArrayList<>();
+        for (int i = 0; i < numberOfClients; ++i) {
+            // Criando client
+            clients.add(new PubSubClient("Client " + i, clientAddress, clientPort + i));
+            // Subscrevendo client
+            clients.get(i).subscribe(brokerAddress, brokerPort);
+            try {
+                Thread.sleep(250);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
         }
 
+        List<Thread> threads = new ArrayList<>();
+        for (int j = 0; j < numberOfAccess; ++j) {
+            for (PubSubClient client : clients) {
+                // Criando a thread que vai tentar dar lock no topico, publicar e então dar unlock
+                threads.add(new ThreadWrapper(client, "varX", brokerAddress, brokerPort));
+                threads.get(threads.size() - 1).start();
+                threads.add(new ThreadWrapper(client, "varY", brokerAddress, brokerPort));
+                threads.get(threads.size() - 1).start();
+                threads.add(new ThreadWrapper(client, "varZ", brokerAddress, brokerPort));
+                threads.get(threads.size() - 1).start();
+            }
+        }
+
+        // Aguardando a conclusão da execução das threads
         try {
-            internalIp = InetAddress.getLocalHost().getHostAddress();
+            for (Thread thread : threads) {
+                thread.join();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        PubSubClient client = new PubSubClient(internalIp, clientPort);
-        client.subscribe(managerIp, managerPort);
-
-        while (!vars.isEmpty()) {
-            String varName = vars.remove(vars.size() - 1);
-
-            try {
-                Thread accessOne = new ThreadWrapper(
-                        client,
-                        "lock:" + identifier + ":var:" + varName,
-                        managerIp,
-                        managerPort,
-                        identifier,
-                        varName
-                );
-
-                accessOne.start();
-                accessOne.join();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            List<Message> logClient = client.getLogMessages();
-
-            Iterator<Message> it = logClient.iterator();
-            System.out.print("Log client items: ");
-            while (it.hasNext()) {
-                Message message = it.next();
-                System.out.print(message.getContent() + " " + message.getLogId() + " | ");
-            }
-            System.out.println();
+        // Desinscrevendo os clients
+        for (PubSubClient client : clients) {
+            client.unsubscribe(brokerAddress, brokerPort);
+            client.stopPubSubClient();
         }
-
-        client.unsubscribe(managerIp, managerPort);
-
-        client.stopPubSubClient();
     }
 
-    public static void main(String[] args) throws Exception {
-        new OneAppl(true);
+    public static void main(String[] args) {
+        int numberOfClients = 5, numberOfAccess = 5, clientPort = 8080, brokerPort = 8082; // clientPort = 23000, brokerPort = 22000
+        String clientAddress = "localhost", brokerAddress = "localhost";
+        Iterator<String> itArgs = Arrays.stream(args).iterator();
+        while (itArgs.hasNext()) {
+            String arg = itArgs.next();
+            switch (arg) {
+                case "-ip" -> clientAddress = itArgs.next();
+                case "-p" -> clientPort = Integer.parseInt(itArgs.next());
+                case "-bip" -> brokerAddress = itArgs.next();
+                case "-bp" -> brokerPort = Integer.parseInt(itArgs.next());
+                case "-nc" -> numberOfClients = Integer.parseInt(itArgs.next());
+                case "-na" -> numberOfAccess = Integer.parseInt(itArgs.next());
+                default -> {
+                    System.out.println("Comando \"" + arg + "\" invalido! Execucao abortada");
+                    return;
+                }
+            }
+        }
+        new OneAppl(numberOfClients, numberOfAccess, clientAddress, clientPort, brokerAddress, brokerPort);
     }
 
-    class ThreadWrapper extends Thread {
-        public PubSubClient c;
-        public String msg;
-        public String host;
-        public String identifier;
-        public String varName;
-        public int port;
+    static class ThreadWrapper extends Thread {
+        PubSubClient c;
+        String var;
+        String host;
+        int op;
+        int port;
 
-        public String backupId = "localhost";
-        public int backupPort = 8081;
-
-        public ThreadWrapper(PubSubClient c, String msg, String host, int port, String identifier, String varName) {
+        public ThreadWrapper(PubSubClient c, String var, String host, int port) {
             this.c = c;
-            this.msg = msg;
+            this.var = var;
             this.host = host;
             this.port = port;
-            this.identifier = identifier;
-            this.varName = varName;
+            this.op = ThreadLocalRandom.current().nextInt(0, 100000);
         }
 
         public void run() {
-            try {
-                c.publish(msg, host, port);
-            } catch (Exception e1) {
-                e1.printStackTrace();
-            }
-
-            boolean access = false;
-            boolean iteration = true;
-            String lastLock = "";
-            String lastLockVar = "";
-            int lastLockId = -1;
-            int firstLockIteration = 0;
-            try {
-                while (!access) {
-                    List <Message> log;
-                    Iterator<Message> it;
+        	// No início da execução, todos os clientes desejam escrever no topic, então todos apresentam a requisição de lock
+            c.publish("intent_to_lock " + op + " " + var + " ", host, port);
+            while (true) {
+                List<Message> log = c.getLogMessages();
+                while (log == null) {
                     try {
-                        log = c.getLogMessages();
-                        it = log.iterator();
-                    } catch (Exception e) {
-                        continue;
+                        sleep(200);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
-
-                    while (it.hasNext()) {
-                        Message aux = it.next();
-                        String message = aux.getContent();
-
-                        boolean showLogMessage = Character.isDigit(message.charAt(0)) || message.startsWith("localhost");
-                        if (showLogMessage) {
-                            continue;
-                        }
-
-                        String[] messageSplit = message.split(":");
-                        String messageType = messageSplit[0];
-                        String messageIdentifier = messageSplit[1];
-                        String messageVarName = messageSplit[3];
-
-                        if (!messageVarName.equals(varName)) {
-                            continue;
-                        }
-
-                        boolean isALockMessageToMyVar = messageType.equals("lock") && messageVarName.equals(varName);
-                        boolean isMyTurnToAccess = messageType.equals("unlock") && messageIdentifier.equals(lastLock) && messageVarName.equals(lastLockVar);
-
-                        if (iteration) {
-                            if (isALockMessageToMyVar) {
-                                firstLockIteration++;
-                            }
-                            boolean itIsMe = messageIdentifier.equals(identifier);
-                            boolean isIsALockMessage = messageType.equals("lock");
-
-                            if (!itIsMe && isIsALockMessage) {
-                                lastLock = messageIdentifier;
-                                lastLockVar = messageVarName;
-                                lastLockId = aux.getLogId();
-                                System.out.println("LAST LOCK: " + lastLock + "-" + lastLockVar);
-                            }
-                        }
-                        else if(firstLockIteration == 1) {
-                            access = true;
-                            System.out.println("FIRST ACCESS");
-                            break;
-                        }
-                        else if (isMyTurnToAccess && aux.getLogId() > lastLockId) {
-                            access = true;
-                            System.out.println("MY TURN TO ACCESS");
-                            break;
-                        }
-                        else if (lastLock.equals("")) {
-                            access = true;
-                            System.out.println("MY ACCESS AGAIN");
-                            break;
-                        }
-                    }
-                    iteration = false;
+                    log = c.getLogMessages();
                 }
-
-                System.out.println("access var " + varName);
-
-                int randomTime = ThreadLocalRandom.current().nextInt(5000, 10000 + 1);
-                Thread.sleep(randomTime);
-
-                msg = "unlock:" + identifier + ":var:" + varName;
-                c.publish(msg, host, port);
-
-                System.out.println("Release var " + varName);
-            } catch (Exception e) {
+                for (Message msg : log) {
+                    String content = msg.getContent();
+                    if (content.contains(var)) {
+                        if (content.contains("unlock")) {
+                            String[] parts = content.split(" ");
+                            for (Message rem : log) {
+                                String remContent = rem.getContent();
+                                if (remContent.contains(parts[1])) {
+                                    log.remove(rem);
+                                }
+                            }
+                            log.remove(msg);
+                        } else if (!content.contains("intent_to_lock") && !content.contains("lock")) {
+                            log.remove(msg);
+                        }
+                    } else {
+                        log.remove(msg);
+                    }
+                }
+                if (log.get(0).getContent().contains("intent_to_lock " + op + " " + var)) {
+                    break;
+                }
+                // Imprimindo o debug
+                /*StringBuilder debug = new StringBuilder("DEBUG " + c.getClientName() + " Op " + op + " " + var + " -> ");
+                for (Message aux : c.getLogMessages()) {
+                    debug.append(aux.getContent()).append(aux.getLogId()).append(" | ");
+                }
+                System.out.println(debug);*/
+            }
+            c.publish("lock " + op + " " + var, host, port);
+            try {
+                sleep(ThreadLocalRandom.current().nextInt(0, 5000));
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+            c.publish("publishing " + op + " " + var + " ", host, port);
+            c.publish("unlock " + op + " " + var + " ", host, port);
+
+            // Imprimindo o log
+            StringBuilder debug = new StringBuilder("LOG " + c.getClientName() + " Op " + op + " " + var + " -> ");
+            for (Message aux : c.getLogMessages()) {
+                debug.append(aux.getContent()).append(aux.getLogId()).append(" | ");
+            }
+            System.out.println(debug);
         }
     }
 }

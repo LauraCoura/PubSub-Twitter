@@ -3,6 +3,7 @@ package appl;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
 
 import core.Message;
 import core.MessageImpl;
@@ -14,12 +15,9 @@ public class PubSubClient {
     private Server observer;
     private ThreadWrapper clientThread;
 
+    private String clientName;
     private String clientAddress;
     private int clientPort;
-
-    private String backupId = "localhost";
-    private int backupPort = 8081;
-    private boolean turn = false;
 
     public PubSubClient() {
         //this constructor must be called only when the method
@@ -27,7 +25,8 @@ public class PubSubClient {
         //otherwise the other constructor must be called
     }
 
-    public PubSubClient(String clientAddress, int clientPort) {
+    public PubSubClient(String clientName, String clientAddress, int clientPort) {
+        this.clientName = clientName;
         this.clientAddress = clientAddress;
         this.clientPort = clientPort;
         observer = new Server(clientPort);
@@ -36,78 +35,55 @@ public class PubSubClient {
     }
 
     public void subscribe(String brokerAddress, int brokerPort) {
-        if (turn) {
-            brokerAddress = backupId;
-            brokerPort = backupPort;
-        }
-
-        try {
-            Message msgBroker = new MessageImpl();
-            msgBroker.setBrokerId(brokerPort);
-            msgBroker.setType("sub");
-            msgBroker.setContent(clientAddress + ":" + clientPort);
-            Client subscriber = new Client(brokerAddress, brokerPort);
-            Message response = subscriber.sendReceive(msgBroker);
-            if (response.getType().equals("backup")) {
-                brokerAddress = response.getContent().split(":")[0];
-                brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
-                subscriber = new Client(brokerAddress, brokerPort);
-                subscriber.sendReceive(msgBroker);
-            }
-        } catch (Exception e) {
-            turn();
+        Message msgBroker = new MessageImpl();
+        msgBroker.setBrokerId(brokerPort);
+        msgBroker.setType("sub");
+        msgBroker.setContent(clientAddress + ":" + clientPort);
+        Client subscriber = new Client(brokerAddress, brokerPort);
+        Message response = subscriber.sendReceive(msgBroker);
+        if (response.getType().equals("backup")) {
+            brokerAddress = response.getContent().split(":")[0];
+            brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
+            subscriber = new Client(brokerAddress, brokerPort);
+            subscriber.sendReceive(msgBroker);
         }
     }
 
     public void unsubscribe(String brokerAddress, int brokerPort) {
-        if (turn) {
-            brokerAddress = backupId;
-            brokerPort = backupPort;
-        }
+        Message msgBroker = new MessageImpl();
+        msgBroker.setBrokerId(brokerPort);
+        msgBroker.setType("unsub");
+        msgBroker.setContent(clientAddress + ":" + clientPort);
+        Client subscriber = new Client(brokerAddress, brokerPort);
+        Message response = subscriber.sendReceive(msgBroker);
 
-        try {
-            Message msgBroker = new MessageImpl();
-            msgBroker.setBrokerId(brokerPort);
-            msgBroker.setType("unsub");
-            msgBroker.setContent(clientAddress + ":" + clientPort);
-            Client subscriber = new Client(brokerAddress, brokerPort);
-            Message response = subscriber.sendReceive(msgBroker);
-
-            if (response.getType().equals("backup")) {
-                brokerAddress = response.getContent().split(":")[0];
-                brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
-                subscriber = new Client(brokerAddress, brokerPort);
-                subscriber.sendReceive(msgBroker);
-            }
-        } catch (Exception e) {
-            turn();
+        if (response.getType().equals("backup")) {
+            brokerAddress = response.getContent().split(":")[0];
+            brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
+            subscriber = new Client(brokerAddress, brokerPort);
+            subscriber.sendReceive(msgBroker);
         }
     }
 
     public void publish(String message, String brokerAddress, int brokerPort) {
-        if (turn) {
-            brokerAddress = backupId;
-            brokerPort = backupPort;
+        Message msgPub = new MessageImpl();
+        msgPub.setBrokerId(brokerPort);
+        msgPub.setType("pub");
+        msgPub.setContent(message);
+
+        Client publisher = new Client(brokerAddress, brokerPort);
+        Message response = publisher.sendReceive(msgPub);
+
+        if (response.getType().equals("backup")) {
+            brokerAddress = response.getContent().split(":")[0];
+            brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
+            publisher = new Client(brokerAddress, brokerPort);
+            publisher.sendReceive(msgPub);
         }
+    }
 
-        try {
-            Message msgPub = new MessageImpl();
-            msgPub.setBrokerId(brokerPort);
-            msgPub.setType("pub");
-            msgPub.setContent(message);
-
-            Client publisher = new Client(brokerAddress, brokerPort);
-            Message response = publisher.sendReceive(msgPub);
-
-            if (response.getType().equals("backup")) {
-                brokerAddress = response.getContent().split(":")[0];
-                brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
-                publisher = new Client(brokerAddress, brokerPort);
-                publisher.sendReceive(msgPub);
-            }
-        } catch (Exception e) {
-            turn();
-        }
+    public String getClientName(){
+        return this.clientName;
     }
 
     public List<Message> getLogMessages() {
@@ -120,23 +96,12 @@ public class PubSubClient {
         clientThread.interrupt();
     }
 
-    private void turn() {
-        Message msgPub = new MessageImpl();
-        msgPub.setBrokerId(8081);
-        msgPub.setType("turn");
-
-        Client publisher = new Client("localhost", 8081);
-        publisher.sendReceive(msgPub);
-
-        turn = true;
-    }
-
     public void startConsole() {
         Scanner reader = new Scanner(System.in);  // Reading from System.in
 
         System.out.print("Enter the client port (ex.8080): ");
         int clientPort = reader.nextInt();
-        System.out.println("Now you need to inform the broker credentials...");
+        System.out.println("Now you need to inform the broker credentials");
         System.out.print("Enter the broker address (ex. localhost): ");
         String brokerAddress = reader.next();
         System.out.print("Enter the broker port (ex.8080): ");
@@ -175,7 +140,7 @@ public class PubSubClient {
                 System.out.println("Enter a message (exit to finish submissions): ");
                 message = reader.next();
 
-                System.out.println("You must inform the broker credentials...");
+                System.out.println("You must inform the broker credentials");
                 System.out.print("Enter the broker address (ex. localhost): ");
                 brokerAddress = reader.next();
                 System.out.print("Enter the broker port (ex.8080): ");
@@ -183,6 +148,7 @@ public class PubSubClient {
 
                 publish(message, brokerAddress, brokerPort);
 
+                // Obtendo notifies do broker/imprimindo o log todo
                 List<Message> log = observer.getLogMessages();
 
                 Iterator<Message> it = log.iterator();
@@ -192,7 +158,11 @@ public class PubSubClient {
                     System.out.print(aux.getContent() + aux.getLogId() + " | ");
                 }
                 System.out.println();
-
+                
+                // Tratando o log
+                // Qual posição estou, quantos acquires tem, quem fez ele, decompor a mensagem
+                
+                
             }
         }
 
@@ -209,7 +179,7 @@ public class PubSubClient {
         reader.close();
     }
 
-    class ThreadWrapper extends Thread {
+    static class ThreadWrapper extends Thread {
         Server s;
 
         public ThreadWrapper(Server s) {
@@ -220,5 +190,4 @@ public class PubSubClient {
             s.begin();
         }
     }
-
 }

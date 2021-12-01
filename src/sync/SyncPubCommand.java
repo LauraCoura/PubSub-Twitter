@@ -2,6 +2,7 @@ package sync;
 
 import java.util.Set;
 import java.util.SortedSet;
+
 import core.Message;
 import core.MessageImpl;
 import core.PubSubCommand;
@@ -9,12 +10,11 @@ import core.PubSubCommand;
 public class SyncPubCommand implements PubSubCommand {
     @Override
     public Message execute(Message m, SortedSet<Message> log, Set<String> subscribers, boolean isPrimary,
-                           String secondaryServerAddress, int secondaryServerPort) {
+                           String sencondaryServerAddress, int secondaryServerPort) {
 
         Message response = new MessageImpl();
 
         response.setLogId(m.getLogId());
-
 
         log.add(m);
 

@@ -4,10 +4,10 @@ import java.util.LinkedList;
 
 public class GenericResource<S> {
     protected boolean finished, serverFinished;
-    private LinkedList<S> registers;
+    private final LinkedList<S> registers;
 
     public GenericResource() {
-        this.registers = new LinkedList<S>();
+        this.registers = new LinkedList<>();
         this.finished = false;
     }
 
@@ -25,7 +25,7 @@ public class GenericResource<S> {
         if (!this.registers.isEmpty())
             return this.registers.removeFirst();
         else {
-            if (finished == false)
+            if (!finished)
                 suspend();
             return null;
         }

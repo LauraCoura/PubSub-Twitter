@@ -37,9 +37,9 @@ public class Server {
 
     public void begin() {
         try {
-            //just one consumer to guarantee a single
-            //log write mechanism
+            //just one consumer to guarantee a single log write mechanism
             consumer = new PubSubConsumer<Socket>(resource, isPrimary, secondaryServer, secondaryPort);
+
             consumer.start();
 
             openServerSocket();
@@ -52,19 +52,27 @@ public class Server {
     }
 
     protected void listen() {
+
+
         while (!resource.isStopped()) {
+
             try {
                 Socket clientSocket = this.serverSocket.accept();
+
                 resource.putRegister(clientSocket);
             } catch (IOException e) {
                 if (resource.isStopped()) {
                     //System.out.println("Stopped.") ;
                     return;
                 }
-                throw new RuntimeException("Error accepting connection", e);
+                throw new RuntimeException(
+                        "Error accepting connection", e);
             }
+
+
         }
         System.out.println("Stopped: " + port);
+
     }
 
     private void openServerSocket() {
@@ -86,6 +94,7 @@ public class Server {
         try {
             serverSocket.close();
         } catch (IOException e) {
+            // TODO Auto-generated catch block
             e.printStackTrace();
         }
 
@@ -99,5 +108,4 @@ public class Server {
             return null;
         }
     }
-
 }

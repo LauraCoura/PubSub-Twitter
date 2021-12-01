@@ -1,9 +1,6 @@
 package appl;
 
 import core.Server;
-import core.Message;
-import core.MessageImpl;
-import core.client.Client;
 
 import java.util.Scanner;
 
@@ -12,55 +9,29 @@ public class Broker {
     public Broker() {
 
         Scanner reader = new Scanner(System.in);  // Reading from System.in
+        System.out.print("Enter the Broker port number: ");
+        int port = reader.nextInt(); // Scans the next token of the input as an int.
 
         System.out.print("Is the broker primary?: Y/N");
         String respYN = reader.next();
 
+        System.out.print("Enter the secondary Broker address: ");
+        String secondAddress = reader.next();
 
-        ThreadWrapper brokerThread;
-        boolean respBol = respYN.equalsIgnoreCase("Y") ? true : false;
+        System.out.print("Enter the secondary Broker port number: ");
+        int secondPort = reader.nextInt();
 
-        Server s;
-        boolean successBackup = false;
-        if (respBol){
-            s = new Server(8080, true, "localhost", 8081);
-            brokerThread = new ThreadWrapper(s);
-            brokerThread.start();
-        } else {
-            s = new Server(8081, false, "localhost", 8080);
-            brokerThread = new ThreadWrapper(s);
-            brokerThread.start();
+        boolean respBol = respYN.equalsIgnoreCase("Y");
 
-            Message msgBroker = new MessageImpl();
-            msgBroker.setBrokerId(8081);
-            msgBroker.setType("backupSub");
-            msgBroker.setContent("localhost"+ ":" + 8081);
+        Server s = new Server(port, respBol, secondAddress, secondPort);
 
-            Message status = null;
+        ThreadWrapper brokerThread = new ThreadWrapper(s);
+        brokerThread.start();
 
-            try {
-                Client subscriber = new Client("localhost", 8080);
-                status = subscriber.sendReceive(msgBroker);
-
-            } catch (Exception e) {
-                successBackup = false;
-            }
-
-            if (status != null && status.getType().equals("backupSub_ack"))
-                successBackup = true;
-        }
-
-        if (successBackup || respBol) {
-            System.out.print("Shutdown the broker (Y|N)?: ");
-            String resp = reader.next();
-            if (resp.equals("Y") || resp.equals("y")){
-                System.out.println("Broker stopped...");
-                s.stop();
-                brokerThread.interrupt();
-            }
-        }
-        else {
-            System.out.println("O backup não foi concluido ou o broker não existe.");
+        System.out.print("Shutdown the broker (Y|N)?: ");
+        String resp = reader.next();
+        if (resp.equals("Y") || resp.equals("y")) {
+            System.out.println("Broker stopped...");
             s.stop();
             brokerThread.interrupt();
         }
@@ -74,7 +45,7 @@ public class Broker {
         new Broker();
     }
 
-    class ThreadWrapper extends Thread {
+    static class ThreadWrapper extends Thread {
         Server s;
 
         public ThreadWrapper(Server s) {

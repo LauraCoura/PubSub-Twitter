@@ -7,7 +7,6 @@ import java.util.Properties;
 import java.util.Set;
 
 public abstract class GenericConsumer<S> extends Thread {
-
     protected GenericResource<S> re;
     protected Map<String, PubSubCommand> commands;
     private boolean stop;

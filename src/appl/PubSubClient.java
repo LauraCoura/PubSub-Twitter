@@ -1,6 +1,7 @@
 package appl;
 
 import java.util.Iterator;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 import java.util.concurrent.ThreadLocalRandom;
@@ -150,12 +151,17 @@ public class PubSubClient {
 
                 // Obtendo notifies do broker/imprimindo o log todo
                 List<Message> log = observer.getLogMessages();
+                List<Message> acquires = new ArrayList<Message>();
+                List<Message> releases = new ArrayList<Message>();
 
                 Iterator<Message> it = log.iterator();
                 System.out.print("Log itens: ");
                 while (it.hasNext()) {
                     Message aux = it.next();
-                    System.out.print(aux.getContent() + aux.getLogId() + " | ");
+                    //System.out.print(aux.getContent() + aux.getLogId() + " | ");
+                    String content = aux.getContent();
+                    String[] contentSplit = content.split("_");
+                    
                 }
                 System.out.println();
                 

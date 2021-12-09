@@ -156,34 +156,34 @@ public class OneAppl {
 		// Pausa para permitir a criação de outros clientes
 		try {
 			System.out.println("Aguardando " + seconds/1000 + " segundos...\n");
-			Thread.sleep(seconds);
+			Thread.currentThread().sleep(seconds);
 	    } catch (InterruptedException e) {
 	    	e.printStackTrace();
 	    }
 		
-		seconds = (int) (Math.random()*(10000 - 1000)) + 1000;
+		//seconds = (int) (Math.random()*(10000 - 1000)) + 1000;
+		
+		access.start();
+		
+		try{
+			access.join();
+		}catch (Exception e){
+			
+		}
 		
 		// Checa se o Broker tá ocupado se sim, espera
+		/*
 		if(access.isAlive()) {
 			try {
 				seconds = (int) (Math.random()*(10000 - 1000)) + 1000;
 				System.out.println("Broker ocupado. Aguardando " + seconds/1000 + " segundos...\n");
 				Thread.sleep(seconds);
-				
-				access.start();
-				
-				try{
-					access.join();
-				}catch (Exception e){
-					
-				}
-				
 		    } catch (InterruptedException e) {
 		    	e.printStackTrace();
 		    }
-		}
+		}*/
 		
-		client.unsubscribe(address, portClient);
+		client.unsubscribe(address, brokerPort);
 		client.stopPubSubClient();	
 	}
 	

@@ -78,7 +78,7 @@ public class OneAppl {
 		
 		int client = 0;
 		
-		PubSubClient listener = new PubSubClient(clientIp[client], 8081);
+		PubSubClient listener = new PubSubClient(brokersIp, 8081);
 
 		listener.subscribe(brokersIp, 8080);
 		Integer n = ThreadLocalRandom.current().nextInt(3, 50);

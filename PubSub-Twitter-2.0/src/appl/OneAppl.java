@@ -5,13 +5,47 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
+import java.util.List;
 import core.Message;
+
+import twitter4j.Status;
+import twitter4j.Twitter;
+import twitter4j.TwitterException;
+import twitter4j.TwitterFactory;
+import twitter4j.conf.ConfigurationBuilder;
 
 public class OneAppl {
 
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		new OneAppl(true);
+	}
+	
+	private void printTweet() throws TwitterException {
+		ConfigurationBuilder cb = new ConfigurationBuilder();
+		cb.setDebugEnabled(true)
+		  .setOAuthConsumerKey("0GEAwIeR8xaLm46vvFUf0XQoV")
+		  .setOAuthConsumerSecret("kUcBGQbnnkPOkQEY19DHCziXeRGeM33Isvxa3GwwCRDjZrsgsm")
+		  .setOAuthAccessToken("1466167969793327105-tZMg2ScAFNCHi3NgGJYkHL3gEpWajk")
+		  .setOAuthAccessTokenSecret("WtBPQ8DwLCayBYin9X3hp5j2ruY4UAJEa97OPIjTvzrxa");
+		
+		TwitterFactory tf = new TwitterFactory(cb.build());
+		Twitter twitter = tf.getInstance();
+		
+		int cont = 0;
+		
+		List<Status> statuses = twitter.getHomeTimeline();
+		
+		for (Status status : statuses){
+			cont++;
+		}
+		
+		Random randomObj = new Random();
+		int randomTweet = randomObj.ints(0, cont).findFirst().getAsInt();
+		
+		System.out.println("TWEET PARA O USUÁRIO:\n");
+		System.out.println("@" + statuses.get(randomTweet).getUser().getName() + ":" +
+                statuses.get(randomTweet).getText());
 	}
 	
 	public static String playMusic(){
@@ -83,6 +117,16 @@ public class OneAppl {
 										
 					if (position > 0 && releasesCount == 0) {                          
 						listener.publish(clientNames[client] + " Tocando: " + playMusic() + " " , brokersIp, 8080);
+						
+						System.out.print("Tweet para o cliente: ");
+						try {
+							printTweet();
+						} catch (TwitterException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+							System.out.println("\n -> Erro na API do Twitter!");
+						}
+						
 					    sleep(3000, "");
 					    listener.publish("Tocou " + clientNames[client] + " ", brokersIp, 8080);
 					    position = 0;

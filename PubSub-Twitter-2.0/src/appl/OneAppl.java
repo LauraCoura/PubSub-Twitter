@@ -76,9 +76,9 @@ public class OneAppl {
 		String[] clientIp = {"34.67.100.60", "104.154.105.80", "35.222.64.135"};
 		String[] clientNames = {"Flavia", "Douglas", "Dani"};
 		
-		int client = 2;
+		int client = 0;
 		
-		PubSubClient listener = new PubSubClient(brokersIp, 8081);
+		PubSubClient listener = new PubSubClient(brokersIp, 8083);
 
 		listener.subscribe(brokersIp, 8080);
 		Integer n = ThreadLocalRandom.current().nextInt(3, 10);
@@ -125,7 +125,7 @@ public class OneAppl {
 						} catch (TwitterException e) {
 							// TODO Auto-generated catch block
 							//e.printStackTrace();
-							System.out.println("\n-> Limite de tweets alcançado!");
+							System.out.println("\n-> Limite de tweets alcançado!\n");
 						}
 						
 					    sleep(3000, "");
@@ -142,7 +142,7 @@ public class OneAppl {
 						index += 1;
 					}
 				}
-				sleep(3000, "Aguardando...");
+				sleep(3000, "\nAguardando...");
 			}
 			sleep(3000, "\nAguardando mais um pouco...");
 		}

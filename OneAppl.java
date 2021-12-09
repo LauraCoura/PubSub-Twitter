@@ -151,7 +151,8 @@ public class OneAppl {
 		boolean startToken = numberClient == 1;
 		String[] resources = {"var X", "var Y", "var Z"};
 		Random seed = new Random();
-		
+		int seconds = 10000;
+
 		PubSubClient client = new PubSubClient(nameClient, address, portClient);
 		
 		String resource = resources[seed.nextInt(resources.length)];
@@ -159,7 +160,6 @@ public class OneAppl {
 		
 		// Pausa para permitir a criação de outros clientes
 		try {
-			int seconds = 5000;
 			System.out.println("Aguardando " + seconds/1000 + " segundos...\n");
 			Thread.sleep(seconds);
 	    } catch (InterruptedException e) {
@@ -168,14 +168,20 @@ public class OneAppl {
 		
 		access.start();
 		
-		try{
-			access.join();
-		}catch (Exception e){
-			
+		if(access.isAlive()) {
+			try {
+				System.out.println("Broker ocupado. Aguardando " + seconds/1000 + " segundos...\n");
+				Thread.sleep(seconds);
+				try{
+					access.join();
+				}catch (Exception e){
+					
+				}
+		    } catch (InterruptedException e) {
+		    	e.printStackTrace();
+		    }
 		}
 		
-		List<Message> logClient = client.getLogMessages();
-		treatLog(logClient);
 		
 		client.unsubscribe(address, portClient);
 		client.stopPubSubClient();	
@@ -196,6 +202,8 @@ public class OneAppl {
 		public void run(){
 			
 			c.publish(msg, host, port);
+			List<Message> logClient = c.getLogMessages();
+			treatLog(logClient);
 		}
 	}
 

@@ -70,7 +70,9 @@ public class OneAppl {
     }
 	
 	public OneAppl(boolean flag){
-		String brokersIp = "34.70.208.126";
+		//String brokersIp = "34.70.208.126";
+		//String[] clientIp = {"34.67.100.60", "104.154.105.80", "35.222.64.135"};
+		String brokersIp = "localhost";
 		String[] clientIp = {"34.67.100.60", "104.154.105.80", "35.222.64.135"};
 		String[] clientNames = {"Flavia", "Douglas", "Dani"};
 		

@@ -27,7 +27,6 @@ public class OneAppl {
             switch (arg) {
             	case "-n" -> nameClient = itArgs.next();
                 case "-p" -> portClient = Integer.parseInt(itArgs.next());
-                case "-m" -> numberClient = Integer.parseInt(itArgs.next());
                 default -> {
                     System.out.println("Comando " + arg +  " invalido!");
                     return;
@@ -35,7 +34,7 @@ public class OneAppl {
             }
         }
         
-		new OneAppl(portClient, nameClient, numberClient);
+		new OneAppl(portClient, nameClient);
 	}
 	
 	private void printTweet() throws TwitterException {
@@ -79,11 +78,11 @@ public class OneAppl {
 			String[] parts2 = content.split("_");
 			int contAcquires = 0;
 			
-			System.out.println("\nUsuario: " + parts2[1] + " - Posicao: " + parts2[0]);
+			System.out.println("\nUsuario: " + parts2[0] + " - Posicao: " + aux.getLogId());
 			
 			if(parts2.length > 1) {
 				try {
-					if (parts2[2].equals("acquire")) {
+					if (parts2[1].equals("acquire")) {
 						logAcquire.add(aux);
 						System.out.println("\nAcessando " + parts2[3]);
 						System.out.println("e requisitando tweet: ");
@@ -140,10 +139,9 @@ public class OneAppl {
 		client.startConsole();
 	}
 	
-	public OneAppl(int portClient, String nameClient, int numberClient){
+	public OneAppl(int portClient, String nameClient){
 		String address = "localhost";
 		int brokerPort = 8085;
-		boolean startToken = numberClient == 1;
 		String[] resources = {"var X", "var Y", "var Z"};
 		Random seed = new Random();
 		int seconds = (int) (Math.random()*(10000 - 1000)) + 1000;
@@ -151,7 +149,8 @@ public class OneAppl {
 		PubSubClient client = new PubSubClient(nameClient, address, portClient);
 		
 		String resource = resources[seed.nextInt(resources.length)];
-		Thread access = new ThreadWrapper(client, numberClient+"_"+nameClient+"_acquire_"+resource, address, brokerPort);
+		//Thread access = new ThreadWrapper(client, nameClient+"_acquire_"+resource, address, brokerPort);
+		Thread access = new requestAcquire(client, nameClient, nameClient+"_acquire_"+resource, address, brokerPort);
 		
 		// Pausa para permitir a criação de outros clientes
 		try {
@@ -163,7 +162,9 @@ public class OneAppl {
 		
 		//seconds = (int) (Math.random()*(10000 - 1000)) + 1000;
 		
+		System.out.println("ANTES DO START()");
 		access.start();
+		System.out.println("DEPOIS DO START()");
 		
 		try{
 			access.join();
@@ -187,6 +188,109 @@ public class OneAppl {
 		client.stopPubSubClient();	
 	}
 	
+	class requestAcquire extends Thread {
+		PubSubClient c;
+		String clientName;
+		String msg;
+		String host;
+		int port;
+		
+		public requestAcquire(PubSubClient client, String clientName, String msg, String hostBroker, int portBroker) {
+			this.c = client;
+			this.msg = msg;
+			this.clientName = clientName;
+			this.host = hostBroker;
+			this.port = portBroker;
+		}
+		
+		public void run() {	
+			Thread access = new ThreadWrapper(c, msg, host, port);
+			access.start();
+			
+			try {
+				access.join();
+			} catch (Exception ignored) {}
+			
+			List<Message> logs = c.getLogMessages();
+			List<String> logAcquire = new ArrayList<String>(); 
+			List<String> logRelease = new ArrayList<String>(); 
+			
+			System.out.println("ANTES DOS LOGS\n");
+
+			Iterator<Message> it = logs.iterator();	
+			
+			if(!it.hasNext()) {
+				System.out.println("LOG VAZIO\n");
+			}
+			
+			while(it.hasNext()){
+				Message aux = it.next();
+				String content = aux.getContent();
+				String[] parts2 = content.split("_");
+				
+				if(parts2.length > 1) {
+					try {
+						if (parts2[2].equals("acquire")) {
+							logAcquire.add(content);
+							System.out.println("ACQUIRE AQUI\n");
+						}
+						else if(parts2[1].equals("release")){
+							logRelease.add(content);
+						}
+					} catch(Exception e){
+					}
+				}
+				
+				System.out.print("\nORDEM DE CHEGADA MANTIDA PELO BROKER: " + logAcquire + " \n");
+				
+				while (!logAcquire.isEmpty()){
+					String firstClient = logAcquire.get(0);
+					boolean hasRelease = false;
+					
+					while(!hasRelease){
+						int randomInterval = (int) (Math.random()*(10000 - 1000)) + 1000;
+						if(firstClient.contains(clientName)){
+							try {
+								access = new ThreadWrapper(c, "use"+parts2[3], host, 8080);
+								access.start();
+								try {
+									access.join();
+								} catch (Exception ignored) {}
+								
+								System.out.println("-------------------------------------");
+								System.out.println(firstClient.split("_")[1] + " pegou o recurso "+parts2[3]);
+
+								System.out.println("Aguardando " + randomInterval/1000 + " segundos...\n");
+								Thread.currentThread().sleep(randomInterval);
+								
+								access = new ThreadWrapper(c, clientName.concat(":release:"+parts2[3]), host, 8080);
+								access.start();
+								hasRelease = true;
+								try {
+									access.join();
+								} catch (Exception ignored) {}
+							}catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+							
+							try{
+								Thread.currentThread().sleep(randomInterval);
+								hasRelease = true;
+							}catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
+						
+						if (!logAcquire.isEmpty()){
+							logAcquire.remove(0);
+						}
+					}
+				}
+		}
+			
+			System.out.println("FINAL DO RUN\n");
+	}
+	
 	class ThreadWrapper extends Thread{
 		PubSubClient c;
 		String msg;
@@ -201,9 +305,10 @@ public class OneAppl {
 		}
 		public void run(){
 			c.publish(msg, host, port);
-			List<Message> logClient = c.getLogMessages();
-			treatLog(logClient);
+			//List<Message> logClient = c.getLogMessages();
+			//treatLog(logClient);
+			
 		}
 	}
-
+}
 }

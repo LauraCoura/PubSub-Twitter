@@ -43,9 +43,9 @@ public class OneAppl {
 		Random randomObj = new Random();
 		int randomTweet = randomObj.ints(0, cont).findFirst().getAsInt();
 		
-		System.out.println("TWEET PARA O USUÁRIO:\n");
+		System.out.println("--> TWEET: ");
 		System.out.println("@" + statuses.get(randomTweet).getUser().getName() + ":" +
-                statuses.get(randomTweet).getText());
+                statuses.get(randomTweet).getText()+"\n\n");
 	}
 	
 	public static String playMusic(){
@@ -76,12 +76,12 @@ public class OneAppl {
 		String[] clientIp = {"34.67.100.60", "104.154.105.80", "35.222.64.135"};
 		String[] clientNames = {"Flavia", "Douglas", "Dani"};
 		
-		int client = 0;
+		int client = 2;
 		
 		PubSubClient listener = new PubSubClient(brokersIp, 8081);
 
 		listener.subscribe(brokersIp, 8080);
-		Integer n = ThreadLocalRandom.current().nextInt(3, 50);
+		Integer n = ThreadLocalRandom.current().nextInt(3, 10);
 		
 		for (int i = 0; i<n; i++) {
 			
@@ -120,13 +120,12 @@ public class OneAppl {
 					if (position > 0 && releasesCount == 0) {                          
 						listener.publish(clientNames[client] + " Tocando: " + playMusic() + " " , brokersIp, 8080);
 						
-						System.out.print("Tweet para o cliente: ");
 						try {
 							printTweet();
 						} catch (TwitterException e) {
 							// TODO Auto-generated catch block
-							e.printStackTrace();
-							System.out.println("\n -> Erro na API do Twitter!");
+							//e.printStackTrace();
+							System.out.println("\n-> Limite de tweets alcançado!");
 						}
 						
 					    sleep(3000, "");
@@ -145,7 +144,7 @@ public class OneAppl {
 				}
 				sleep(3000, "Aguardando...");
 			}
-			sleep(3000, "Aguardando...");
+			sleep(3000, "\nAguardando mais um pouco...");
 		}
 		listener.stopPubSubClient();
 	}

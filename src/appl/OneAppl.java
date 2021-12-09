@@ -101,11 +101,6 @@ public class OneAppl {
 					e1.printStackTrace();
 				}
 				
-				/*
-				// Acquire vira release
-				// TODO: CRIAR UMA FUNÇÃO RELEASE?
-				parts2[1] = "release";*/
-				
 				System.out.println("\nACQUIRES:\n");
 				Iterator<Message> itAcq = logAcquire.iterator();
 				while (itAcq.hasNext()){
@@ -122,7 +117,6 @@ public class OneAppl {
 					String contentRelease = auxRelease.getContent();
 					System.out.print(contentRelease + " | ");
 				}
-				
 			}
 		
 			try {
@@ -152,7 +146,8 @@ public class OneAppl {
 		boolean startToken = numberClient == 1;
 		String[] resources = {"var X", "var Y", "var Z"};
 		Random seed = new Random();
-		
+		int seconds = (int) (Math.random()*(10000 - 1000)) + 1000;
+
 		PubSubClient client = new PubSubClient(nameClient, address, portClient);
 		
 		String resource = resources[seed.nextInt(resources.length)];
@@ -160,23 +155,33 @@ public class OneAppl {
 		
 		// Pausa para permitir a criação de outros clientes
 		try {
-			int seconds = (int) (Math.random()*(10000 - 1000)) + 1000;
 			System.out.println("Aguardando " + seconds/1000 + " segundos...\n");
 			Thread.sleep(seconds);
 	    } catch (InterruptedException e) {
 	    	e.printStackTrace();
 	    }
 		
-		access.start();
+		seconds = (int) (Math.random()*(10000 - 1000)) + 1000;
 		
-		try{
-			access.join();
-		}catch (Exception e){
-			
+		// Checa se o Broker tá ocupado se sim, espera
+		if(access.isAlive()) {
+			try {
+				seconds = (int) (Math.random()*(10000 - 1000)) + 1000;
+				System.out.println("Broker ocupado. Aguardando " + seconds/1000 + " segundos...\n");
+				Thread.sleep(seconds);
+				
+				access.start();
+				
+				try{
+					access.join();
+				}catch (Exception e){
+					
+				}
+				
+		    } catch (InterruptedException e) {
+		    	e.printStackTrace();
+		    }
 		}
-		
-		List<Message> logClient = client.getLogMessages();
-		treatLog(logClient);
 		
 		client.unsubscribe(address, portClient);
 		client.stopPubSubClient();	
@@ -195,8 +200,9 @@ public class OneAppl {
 			this.port = port;
 		}
 		public void run(){
-			
 			c.publish(msg, host, port);
+			List<Message> logClient = c.getLogMessages();
+			treatLog(logClient);
 		}
 	}
 

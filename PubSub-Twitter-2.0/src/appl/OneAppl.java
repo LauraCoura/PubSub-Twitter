@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.List;
 import core.Message;
@@ -16,7 +17,7 @@ import twitter4j.conf.ConfigurationBuilder;
 
 public class OneAppl {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws TwitterException {
 		// TODO Auto-generated method stub
 		new OneAppl(true);
 	}
@@ -48,104 +49,126 @@ public class OneAppl {
                 statuses.get(randomTweet).getText()+"\n\n");
 	}
 	
+	private String[] getTweets(int n) throws TwitterException{
+		String[] twt = new String[n];
+		
+		ConfigurationBuilder cb = new ConfigurationBuilder();
+		cb.setDebugEnabled(true)
+		  .setOAuthConsumerKey("0GEAwIeR8xaLm46vvFUf0XQoV")
+		  .setOAuthConsumerSecret("kUcBGQbnnkPOkQEY19DHCziXeRGeM33Isvxa3GwwCRDjZrsgsm")
+		  .setOAuthAccessToken("1466167969793327105-tZMg2ScAFNCHi3NgGJYkHL3gEpWajk")
+		  .setOAuthAccessTokenSecret("WtBPQ8DwLCayBYin9X3hp5j2ruY4UAJEa97OPIjTvzrxa");
+		
+		TwitterFactory tf = new TwitterFactory(cb.build());
+		Twitter twitter = tf.getInstance();
+		
+		int cont = 0;
+		
+		List<Status> statuses = twitter.getHomeTimeline();
+		
+		for (Status status : statuses){
+			cont++;
+		}
+		
+		for(int i = 0; i < cont; i++) {
+			twt[i] = "@" + statuses.get(i).getUser().getName() + ":" +
+	                statuses.get(i).getText()+"\n\n";
+		}
+		
+		return twt;
+	}
+	
 	public static String playMusic(){
         String[] songNames = {
-            "Xuxa - AbecedÃ¡rio da Xuxa",
             "Xuxa - Doce Mel",
             "Xuxa - Lua de Cristal",
-            "Xuxa - IlariÃª",
             "Up - Cardi B",
-            "Leave The Door OpenSilk Sonic - Bruno Mars & Anderson",
-            "Drivers License - Olivia Rodrigo",
-            "What's Next - Drake",
-            "Save Your Tears - The Weeknd",
-            "Blinding Lights - The Weeknd",
-            "Levitating - Dua Lipa Ft DaBaby",
             "34+35- Ariana Grande",
             "Wants And Needs - Drake Featuring Lil Baby",
-            "Go Crazy- Chris Brown & Young Thug",
-            "Therefore I Am â€“ Billie Eilish"
+            "Therefore I Am - Billie Eilish"
         };
         return songNames [new Random().nextInt(songNames.length)];
     }
 	
-	public OneAppl(boolean flag){
+	public OneAppl(boolean flag) throws TwitterException{
 		//String brokersIp = "34.70.208.126";
 		//String[] clientIp = {"34.67.100.60", "104.154.105.80", "35.222.64.135"};
+		
 		String brokersIp = "localhost";
-		String[] clientIp = {"34.67.100.60", "104.154.105.80", "35.222.64.135"};
 		String[] clientNames = {"Flavia", "Douglas", "Dani"};
+		int n = 3; // Quantidade de variáveis
+		int stateTweet[] = new int[n]; // Vetor com o estado das variáveis: locked (1) ou unlocked (0)
+		
+		for(int i = 0; i < n; i++) {
+			stateTweet[i] = 0; // Inicialmente, todas as variáveis estão desbloqueadas (unlocked)
+		}
+		
+		String[] tweets = getTweets(n); // Basicamente, são as variáveis da aplicação
 		
 		int client = 0;
-		
 		PubSubClient listener = new PubSubClient(brokersIp, 8083);
-
 		listener.subscribe(brokersIp, 8080);
-		Integer n = ThreadLocalRandom.current().nextInt(3, 10);
+		//Integer n = ThreadLocalRandom.current().nextInt(3, 10);
 		
-		for (int i = 0; i<n; i++) {
+		// Mensagem é definida pelo nome do cliente, tipo de transação e variável. Exemplo: Flavia_read_twt0
+		listener.publish(clientNames[client] + "_read_twt" + Integer.toString(client), brokersIp, 8080);
 			
-		    listener.publish("Toca-ai " + clientNames[client] + " ", brokersIp, 8080);
-			
-			Integer position = 0;
-			Integer releasesCount = 0;
-			Boolean logMeOut = false;
-			
-			while(logMeOut == false) {
-				Set<Message> log = listener.getLogMessages();
-				Set<Message> log2 = new HashSet<>(log);
-				Iterator<Message> it = log2.iterator();
-				System.out.print("Log " + clientNames[client] + " itens: ");
-				Integer index = 0;
-				while(it.hasNext()){
-					
-					Message aux = it.next();
-					System.out.println(aux.getContent() + aux.getLogId() + " | ");
-					String[] words = aux.getContent().split(" ");
-					String logType = "";
-					String logName = "";
-					
-					if (words.length > 1) {
-						logType = words[0];
-						logName = words[1];
-					}
-	
-					if (position == 0) {
-						if (logName.equals(clientNames[client])) {
-							position = index + 1;
-							releasesCount = position - 1;
-						}
-					}
-										
-					if (position > 0 && releasesCount == 0) {                          
-						listener.publish(clientNames[client] + " Tocando: " + playMusic() + " " , brokersIp, 8080);
-						
-						try {
-							printTweet();
-						} catch (TwitterException e) {
-							// TODO Auto-generated catch block
-							//e.printStackTrace();
-							System.out.println("\n-> Limite de tweets alcançado!\n");
-						}
-						
-					    sleep(3000, "");
-					    listener.publish("Tocou " + clientNames[client] + " ", brokersIp, 8080);
-					    position = 0;
-					    logMeOut = true;
-					} 
-					
-					else if (position > 0 && logType.equals("Tocou")) {
-						releasesCount -= 1;
-					}
-					
-					if (logType.equals("Tocou") || logType.equals("Toca-ai")) {
-						index += 1;
-					}
-				}
-				sleep(3000, "\nAguardando...");
+		Set<Message> log = listener.getLogMessages();
+		Iterator<Message> it = log.iterator();
+		while(it.hasNext()){
+			Message aux = it.next();
+			String content = aux.getContent();
+			String[] parts = content.split("_");
+				
+			String msgType = "";
+			String msgName = "";
+				
+			if(parts.length > 1) {
+				msgType = parts[1];
+				msgName = parts[0];
 			}
-			sleep(3000, "\nAguardando mais um pouco...");
+				
+			if(msgType == "read"){
+				// Checa se está bloqueado, se sim espera desbloquear para ler
+				while(stateTweet[client] == 1) {
+					System.out.println("Aguardando desbloquear variavel para leitura...\n");
+				}
+						
+				// Se não, bloqueia (lock) e le
+				if(stateTweet[client] == 0) { // Desbloqueado
+					// Le tweet
+					System.out.println(tweets[client]);
+					
+					// Bloqueia (lock)
+					stateTweet[client] = 1;
+				}
+			}
+			else if(msgType == "write") {
+				// Checa se está bloqueado, se sim espera desbloquear para escrever
+				while(stateTweet[client] == 1) {
+					System.out.println("Aguardando desbloquear variavel para escrita...\n");
+				}	
+					
+				// Se não, bloqueia e escreve
+				if(stateTweet[client] == 0) { // Desbloqueado
+					// Escreve tweet
+					System.out.println("Digite o tweet: ");
+					Scanner reader = new Scanner(System.in); 
+					String tweet = reader.nextLine();
+					
+					// Atualiza o tweet
+					tweets[client] = "@" + clientNames[client] + ":" + tweet + "\n\n";
+					
+					reader.close();
+					// Bloqueia (lock)
+					stateTweet[client] = 1;
+				}
+			}
+				
+			// Feito a transação, desbloqueia (unlock)
+			stateTweet[client] = 0;	
 		}
+		
 		listener.stopPubSubClient();
 	}
 	

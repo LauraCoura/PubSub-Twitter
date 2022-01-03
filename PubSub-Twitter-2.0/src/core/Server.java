@@ -13,12 +13,26 @@ public class Server {
 	protected GenericResource<Socket> resource;
 	protected int port;
 	protected ServerSocket serverSocket;
+	protected boolean isPrimary;
+	protected String backupServer;
+	protected int backupPort;
 		
 	public Server(int port){
 		this.port = port;
+		isPrimary = true;
+		backupServer = null;
+		backupPort = -1;
 		
 		resource = new GenericResource<Socket>();
+	}
+	
+	public Server(int port, boolean isPrimary, String primaryServer,  String backupServer, int backupPort){
+		this.port = port;
+		this.isPrimary = isPrimary;
+		this.backupServer = backupServer;
+		this.backupPort = backupPort;
 		
+		resource = new GenericResource<Socket>();
 	}
 	
 		

@@ -27,7 +27,7 @@ public class OneAppl {
         debora.subscribe("localhost", 8080);
         jonata.subscribe("localhost", 8081);
         
-        int n = 3; // Quantidade de variáveis
+        //int n = 3; // Quantidade de variáveis
 		
 		//String[] tweets = getTweets(n); // Basicamente, são as variáveis da aplicação
 		
@@ -51,9 +51,9 @@ public class OneAppl {
 				
 		}*/
 
-		Thread accessOne = new ThreadWrapper(joubert, "access_Joubert_var X", "localhost", 8080);
-        Thread accessTwo = new ThreadWrapper(debora, "access_Debora_var X", "localhost", 8080);
-        Thread accessThree = new ThreadWrapper(jonata, "access_Jonata_var X", "localhost", 8081);
+		Thread accessOne = new ThreadWrapper(joubert, "access Joubert var X", "localhost", 8080);
+        Thread accessTwo = new ThreadWrapper(debora, "access Debora var X", "localhost", 8080);
+        Thread accessThree = new ThreadWrapper(jonata, "access Jonata var X", "localhost", 8081);
         
         accessOne.start();
         accessTwo.start();

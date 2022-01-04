@@ -18,7 +18,7 @@ public class OneAppl {
         client.startConsole();
     }
 
-    public OneAppl(boolean flag) throws TwitterException{
+    public OneAppl(boolean flag){
         PubSubClient joubert = new PubSubClient("localhost", 8082);
         PubSubClient debora = new PubSubClient("localhost", 8083);
         PubSubClient jonata = new PubSubClient("localhost", 8084);
@@ -28,13 +28,8 @@ public class OneAppl {
         jonata.subscribe("localhost", 8081);
         
         int n = 3; // Quantidade de variáveis
-        int stateTweet[] = new int[n]; // Vetor com o estado das variáveis: locked (1) ou unlocked (0)
 		
-		for(int i = 0; i < n; i++) {
-			stateTweet[i] = 0; // Inicialmente, todas as variáveis estão desbloqueadas (unlocked)
-		}
-		
-		String[] tweets = getTweets(n); // Basicamente, são as variáveis da aplicação
+		//String[] tweets = getTweets(n); // Basicamente, são as variáveis da aplicação
 		
 		// Mensagem é definida pelo nome do cliente, tipo de transação e variável. Exemplo: Flavia_read_twt0
 		//listener.publish(clientNames[client] + "_read_twt" + Integer.toString(client), brokersIp, 8080);

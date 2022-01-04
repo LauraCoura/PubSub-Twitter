@@ -16,23 +16,37 @@ public class PubSubClient {
 
     private String clientAddress;
     private int clientPort;
+    
+    String primaryAddress;
+	int primaryPort;
+	String secondaryAddress;
+	int secondaryPort;
 
     public PubSubClient() {
         //this constructor must be called only when the method
         //startConsole is used
         //otherwise the other constructor must be called
+    	this.primaryAddress = "";
+		this.primaryPort = 0;
+		this.secondaryAddress = "";
+		this.secondaryPort = 0;
     }
 
     public PubSubClient(String clientAddress, int clientPort) {
         this.clientAddress = clientAddress;
         this.clientPort = clientPort;
+        
+        this.primaryAddress = "";
+		this.primaryPort = 0;
+		this.secondaryAddress = "";
+		this.secondaryPort = 0;
+		
         observer = new Server(clientPort);
         clientThread = new ThreadWrapper(observer);
         clientThread.start();
     }
 
     public void subscribe(String brokerAddress, int brokerPort) {
-
         Message msgBroker = new MessageImpl();
         msgBroker.setBrokerId(brokerPort);
         msgBroker.setType("sub");
@@ -79,8 +93,6 @@ public class PubSubClient {
             publisher = new Client(brokerAddress, brokerPort);
             publisher.sendReceive(msgPub);
         }
-
-
     }
 
     public List<Message> getLogMessages() {

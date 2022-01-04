@@ -45,7 +45,6 @@ public class PubSubClient {
 	}
 	
 	public void subscribe(String brokerAddress, int brokerPort){
-					
 		Message msgBroker = new MessageImpl();
 		msgBroker.setBrokerId(brokerPort);
 		msgBroker.setType("sub");

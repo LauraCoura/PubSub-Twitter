@@ -1,9 +1,7 @@
 package appl;
 
-import java.util.HashSet;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.Random;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.List;
@@ -22,6 +20,7 @@ public class OneAppl {
 		new OneAppl(true);
 	}
 	
+	/*
 	private void printTweet() throws TwitterException {
 		ConfigurationBuilder cb = new ConfigurationBuilder();
 		cb.setDebugEnabled(true)
@@ -47,7 +46,7 @@ public class OneAppl {
 		System.out.println("--> TWEET: ");
 		System.out.println("@" + statuses.get(randomTweet).getUser().getName() + ":" +
                 statuses.get(randomTweet).getText()+"\n\n");
-	}
+	}*/
 	
 	private String[] getTweets(int n) throws TwitterException{
 		String[] twt = new String[n];
@@ -78,17 +77,35 @@ public class OneAppl {
 		return twt;
 	}
 	
-	public static String playMusic(){
-        String[] songNames = {
-            "Xuxa - Doce Mel",
-            "Xuxa - Lua de Cristal",
-            "Up - Cardi B",
-            "34+35- Ariana Grande",
-            "Wants And Needs - Drake Featuring Lil Baby",
-            "Therefore I Am - Billie Eilish"
-        };
-        return songNames [new Random().nextInt(songNames.length)];
-    }
+	private void undo(List<Message> logUser) {
+		/* Percorre o log para trás, retornando todos os itens 
+		   alterados por uma operação write aos seus valores antigos */
+		
+		Iterator<Message> it = logUser.listIterator(logUser.size());
+		
+		List<Message> logRead = new ArrayList<Message>(); 
+		List<Message> logWrite = new ArrayList<Message>(); 
+		
+		while(it.hasNext()){
+			
+		}
+		
+	}
+	
+	private void redo(List<Message> logUser) {
+		/* Percorre o log para frente, ajustando todos os itens alterados
+		   por uma operação write para seus valores novos. */
+		
+		Iterator<Message> it = logUser.iterator();
+		
+		List<Message> logRead = new ArrayList<Message>(); 
+		List<Message> logWrite = new ArrayList<Message>(); 
+		
+		while(it.hasNext()){
+			
+		}
+		
+	}
 	
 	public OneAppl(boolean flag) throws TwitterException{
 		//String brokersIp = "34.70.208.126";

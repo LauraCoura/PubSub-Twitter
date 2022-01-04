@@ -51,9 +51,9 @@ public class OneAppl {
 				
 		}*/
 
-		Thread accessOne = new ThreadWrapper(joubert, "access Joubert var X", "localhost", 8080);
-        Thread accessTwo = new ThreadWrapper(debora, "access Debora var X", "localhost", 8080);
-        Thread accessThree = new ThreadWrapper(jonata, "access Jonata var X", "localhost", 8081);
+		Thread accessOne = new ThreadWrapper(joubert, "access Joubert- var X", "localhost", 8080);
+        Thread accessTwo = new ThreadWrapper(debora, "access Debora- var X", "localhost", 8080);
+        Thread accessThree = new ThreadWrapper(jonata, "access Jonata- var X", "localhost", 8081);
         
         accessOne.start();
         accessTwo.start();

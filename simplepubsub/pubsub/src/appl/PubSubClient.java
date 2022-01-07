@@ -17,10 +17,10 @@ public class PubSubClient {
     private String clientAddress;
     private int clientPort;
     
-    String primaryAddress;
-	int primaryPort;
-	String secondaryAddress;
-	int secondaryPort;
+    private String primaryAddress;
+    private int primaryPort;
+    private String backupAddress;
+    private int backupPort;
 
     public PubSubClient() {
         //this constructor must be called only when the method
@@ -28,8 +28,8 @@ public class PubSubClient {
         //otherwise the other constructor must be called
     	this.primaryAddress = "";
 		this.primaryPort = 0;
-		this.secondaryAddress = "";
-		this.secondaryPort = 0;
+		this.backupAddress = "";
+		this.backupPort = 0;
     }
 
     public PubSubClient(String clientAddress, int clientPort) {
@@ -38,8 +38,8 @@ public class PubSubClient {
         
         this.primaryAddress = "";
 		this.primaryPort = 0;
-		this.secondaryAddress = "";
-		this.secondaryPort = 0;
+		this.backupAddress = "";
+		this.backupPort = 0;
 		
         observer = new Server(clientPort);
         clientThread = new ThreadWrapper(observer);
@@ -47,17 +47,36 @@ public class PubSubClient {
     }
 
     public void subscribe(String brokerAddress, int brokerPort) {
+
         Message msgBroker = new MessageImpl();
         msgBroker.setBrokerId(brokerPort);
         msgBroker.setType("sub");
         msgBroker.setContent(clientAddress + ":" + clientPort);
-        Client subscriber = new Client(brokerAddress, brokerPort);
-        Message response = subscriber.sendReceive(msgBroker);
-        if (response.getType().equals("backup")) {
-            brokerAddress = response.getContent().split(":")[0];
-            brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
-            subscriber = new Client(brokerAddress, brokerPort);
-            subscriber.sendReceive(msgBroker);
+        
+        try {
+        	Client subscriber = new Client(brokerAddress, brokerPort);
+            Message response = subscriber.sendReceive(msgBroker);
+            
+            //System.out.println(clientPort + " Trying to subscribe to " + brokerAddress + ":" + brokerPort);
+            System.out.println("Response content: " + response.getContent());
+            //System.out.println("Response type: " + response.getType());
+            
+            if (response.getType().equals("backup")) {
+            	// backup will send back info on the primary broker
+                brokerAddress = response.getContent().split(":")[0];
+                brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
+                subscriber = new Client(brokerAddress, brokerPort);
+                subscriber.sendReceive(msgBroker);
+                
+                // guardar address e porta globalmente na classe para nao ter que perguntar sempre se é backup
+                this.primaryAddress = brokerAddress;
+                this.primaryPort = brokerPort;
+            }
+        } catch (Exception e) {
+        	System.out.println(e);
+        	System.out.println("Trying to connect to backup...");  
+        	
+        	// MEXER AQUI
         }
     }
 
@@ -67,14 +86,19 @@ public class PubSubClient {
         msgBroker.setBrokerId(brokerPort);
         msgBroker.setType("unsub");
         msgBroker.setContent(clientAddress + ":" + clientPort);
-        Client subscriber = new Client(brokerAddress, brokerPort);
-        Message response = subscriber.sendReceive(msgBroker);
-
-        if (response.getType().equals("backup")) {
-            brokerAddress = response.getContent().split(":")[0];
-            brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
-            subscriber = new Client(brokerAddress, brokerPort);
-            subscriber.sendReceive(msgBroker);
+        
+        try {
+        	Client subscriber = new Client(brokerAddress, brokerPort);
+            Message response = subscriber.sendReceive(msgBroker);
+            
+            if (response.getType().equals("backup")) {
+                brokerAddress = response.getContent().split(":")[0];
+                brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
+                subscriber = new Client(brokerAddress, brokerPort);
+                subscriber.sendReceive(msgBroker);
+            }
+        } catch (Exception e) {
+        	System.out.print(e);
         }
     }
 
@@ -84,14 +108,32 @@ public class PubSubClient {
         msgPub.setType("pub");
         msgPub.setContent(message);
 
-        Client publisher = new Client(brokerAddress, brokerPort);
-        Message response = publisher.sendReceive(msgPub);
+        try {
+        	Client publisher = new Client(brokerAddress, brokerPort);
+        	Message response = publisher.sendReceive(msgPub);
+        	
+        	System.out.println(clientPort + " Trying to publish '" + message + "' to " + brokerAddress + ":" + brokerPort);
+        	System.out.println("Response content: " + response.getContent());
+            //System.out.println("Response type: " + response.getType());
 
-        if (response.getType().equals("backup")) {
-            brokerAddress = response.getContent().split(":")[0];
-            brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
-            publisher = new Client(brokerAddress, brokerPort);
-            publisher.sendReceive(msgPub);
+	        if (response.getType().equals("backup")) {
+	            brokerAddress = response.getContent().split(":")[0];
+	            brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
+	            publisher = new Client(brokerAddress, brokerPort);
+	            publisher.sendReceive(msgPub);
+	        }
+        } catch (Exception e) {
+        	System.out.println(e);
+        	
+        	// rodar portas 8080 e 8081
+        	// cancelar 8080
+        	// vai dar erro pq joubert nao conectar a porta 8080
+        	
+        	System.out.println("Trying to publish to backup");
+        	
+        	// MEXER AQUI
+        	
+        	// Achar o backup aqui e mandar função de novo
         }
     }
 
@@ -140,6 +182,7 @@ public class PubSubClient {
             }
         }
 
+        
         System.out.println("Do you want to publish messages? (Y|N)");
         resp = reader.next();
         if (resp.equals("Y") || resp.equals("y")) {

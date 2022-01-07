@@ -15,8 +15,9 @@ public class Broker {
         System.out.print("Is the broker primary?: Y/N");
         String respYN = reader.next();
 
-        System.out.print("Enter the secondary Broker address: ");
-        String secondAddress = reader.next();
+        //System.out.print("Enter the secondary Broker address: ");
+        //String secondAddress = reader.next();
+        String secondAddress = "localhost";
 
         System.out.print("Enter the secondary Broker port number: ");
         int secondPort = reader.nextInt();

@@ -3,12 +3,6 @@ package appl;
 import java.util.Iterator;
 import java.util.List;
 
-import twitter4j.Status;
-import twitter4j.Twitter;
-import twitter4j.TwitterException;
-import twitter4j.TwitterFactory;
-import twitter4j.conf.ConfigurationBuilder;
-
 import core.Message;
 
 public class OneAppl {
@@ -18,7 +12,7 @@ public class OneAppl {
         client.startConsole();
     }
 
-    public OneAppl(boolean flag){
+    public OneAppl(boolean flag) {
         PubSubClient joubert = new PubSubClient("localhost", 8082);
         PubSubClient debora = new PubSubClient("localhost", 8083);
         PubSubClient jonata = new PubSubClient("localhost", 8084);
@@ -26,32 +20,8 @@ public class OneAppl {
         joubert.subscribe("localhost", 8080);
         debora.subscribe("localhost", 8080);
         jonata.subscribe("localhost", 8081);
-        
-        //int n = 3; // Quantidade de variáveis
-		
-		//String[] tweets = getTweets(n); // Basicamente, são as variáveis da aplicação
-		
-		// Mensagem é definida pelo nome do cliente, tipo de transação e variável. Exemplo: Flavia_read_twt0
-		//listener.publish(clientNames[client] + "_read_twt" + Integer.toString(client), brokersIp, 8080);
-		
-		/*Set<Message> log = listener.getLogMessages();
-		Iterator<Message> it = log.iterator();
-		while(it.hasNext()){
-			Message aux = it.next();
-			String content = aux.getContent();
-			String[] parts = content.split("_");
-				
-			String msgType = "";
-			String msgName = "";
-				
-			if(parts.length > 1) {
-				msgType = parts[1];
-				msgName = parts[0];
-			}
-				
-		}*/
 
-		Thread accessOne = new ThreadWrapper(joubert, "access Joubert- var X", "localhost", 8080);
+        Thread accessOne = new ThreadWrapper(joubert, "access Joubert- var X", "localhost", 8080);
         Thread accessTwo = new ThreadWrapper(debora, "access Debora- var X", "localhost", 8080);
         Thread accessThree = new ThreadWrapper(jonata, "access Jonata- var X", "localhost", 8081);
         
@@ -75,7 +45,7 @@ public class OneAppl {
         System.out.print("Log Joubert itens: ");
         while (it.hasNext()) {
             Message aux = it.next();
-            System.out.print(aux.getContent() + aux.getLogId() + " | ");
+            System.out.print(aux.getContent() + " " + aux.getLogId() + " | ");
         }
         System.out.println();
 
@@ -83,7 +53,7 @@ public class OneAppl {
         System.out.print("Log Jonata itens: ");
         while (it.hasNext()) {
             Message aux = it.next();
-            System.out.print(aux.getContent() + aux.getLogId() + " | ");
+            System.out.print(aux.getContent() + " " + aux.getLogId() + " | ");
         }
         System.out.println();
 
@@ -91,7 +61,7 @@ public class OneAppl {
         System.out.print("Log Debora itens: ");
         while (it.hasNext()) {
             Message aux = it.next();
-            System.out.print(aux.getContent() + aux.getLogId() + " | ");
+            System.out.print(aux.getContent() + " " + aux.getLogId() + " | ");
         }
         System.out.println();
 
@@ -103,35 +73,6 @@ public class OneAppl {
         debora.stopPubSubClient();
         jonata.stopPubSubClient();
     }
-    
-    private String[] getTweets(int n) throws TwitterException{
-		String[] twt = new String[n];
-		
-		ConfigurationBuilder cb = new ConfigurationBuilder();
-		cb.setDebugEnabled(true)
-		  .setOAuthConsumerKey("0GEAwIeR8xaLm46vvFUf0XQoV")
-		  .setOAuthConsumerSecret("kUcBGQbnnkPOkQEY19DHCziXeRGeM33Isvxa3GwwCRDjZrsgsm")
-		  .setOAuthAccessToken("1466167969793327105-tZMg2ScAFNCHi3NgGJYkHL3gEpWajk")
-		  .setOAuthAccessTokenSecret("WtBPQ8DwLCayBYin9X3hp5j2ruY4UAJEa97OPIjTvzrxa");
-		
-		TwitterFactory tf = new TwitterFactory(cb.build());
-		Twitter twitter = tf.getInstance();
-		
-		int cont = 0;
-		
-		List<Status> statuses = twitter.getHomeTimeline();
-		
-		for (Status status : statuses){
-			cont++;
-		}
-		
-		for(int i = 0; i < cont; i++) {
-			twt[i] = "@" + statuses.get(i).getUser().getName() + ":" +
-	                statuses.get(i).getText()+"\n\n";
-		}
-		
-		return twt;
-	}
 
     public static void main(String[] args) {
         // TODO Auto-generated method stub

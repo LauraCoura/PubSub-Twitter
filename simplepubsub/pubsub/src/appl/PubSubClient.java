@@ -74,9 +74,12 @@ public class PubSubClient {
             }
         } catch (Exception e) {
         	System.out.println(e);
-        	System.out.println("Trying to connect to backup...");  
+        	System.out.println("Trying to subscribe on backup...");  
         	
-        	// MEXER AQUI
+        	Client subscriber = new Client(backupAddress, backupPort);
+            subscriber.sendReceive(msgBroker);
+            
+            System.out.print("\nSubscribe on backup successful\n");
         }
     }
 
@@ -99,6 +102,14 @@ public class PubSubClient {
             }
         } catch (Exception e) {
         	System.out.print(e);
+        	
+        	System.out.println("Trying to unsubscribe on backup...");
+        	
+        	Client subscriber = new Client(backupAddress, backupPort);
+            subscriber.sendReceive(msgBroker);
+            
+            System.out.print("\nUnsubscribe on backup successful\n");
+        	
         }
     }
 
@@ -124,16 +135,15 @@ public class PubSubClient {
 	        }
         } catch (Exception e) {
         	System.out.println(e);
+        	// Teste: rodar portas 8080 e 8081; cancelar 8080
+        	// Vai dar erro pq joubert nao conectar a porta 8080
         	
-        	// rodar portas 8080 e 8081
-        	// cancelar 8080
-        	// vai dar erro pq joubert nao conectar a porta 8080
+        	System.out.println("Trying to publish on backup...");
         	
-        	System.out.println("Trying to publish to backup");
-        	
-        	// MEXER AQUI
-        	
-        	// Achar o backup aqui e mandar função de novo
+        	Client subscriber = new Client(backupAddress, backupPort);
+            subscriber.sendReceive(msgPub);
+            
+            System.out.print("\nPublish on backup successful\n");
         }
     }
 

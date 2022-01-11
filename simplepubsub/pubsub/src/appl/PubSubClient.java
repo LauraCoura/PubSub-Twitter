@@ -47,7 +47,6 @@ public class PubSubClient {
     }
 
     public void subscribe(String brokerAddress, int brokerPort) {
-
         Message msgBroker = new MessageImpl();
         msgBroker.setBrokerId(brokerPort);
         msgBroker.setType("sub");
@@ -76,7 +75,7 @@ public class PubSubClient {
         	System.out.println(e);
         	System.out.println("\nTrying to subscribe on backup...");  
         	
-        	Client subscriber = new Client(backupAddress, backupPort);
+        	Client subscriber = new Client(backupAddress, getBackup(brokerPort));
             subscriber.sendReceive(msgBroker);
             
             System.out.print("Subscribe on backup successful\n\n");
@@ -84,19 +83,10 @@ public class PubSubClient {
     }
 
     public void unsubscribe(String brokerAddress, int brokerPort) {
-
         Message msgBroker = new MessageImpl();
         msgBroker.setBrokerId(brokerPort);
         msgBroker.setType("unsub");
         msgBroker.setContent(clientAddress + ":" + clientPort);
-        
-        /*
-        if(brokerPort == 8080) {
-        	this.backupPort = 8081;
-        }
-        else {
-        	this.backupPort = 8080;
-        }*/
         
         try {
         	Client subscriber = new Client(brokerAddress, brokerPort);
@@ -117,19 +107,8 @@ public class PubSubClient {
         	
         	System.out.println("\nTrying to unsubscribe on backup...");
         	
-        	Client subscriber = new Client(backupAddress, backupPort);
+        	Client subscriber = new Client(backupAddress, getBackup(brokerPort));
         	Message response = subscriber.sendReceive(msgBroker);
-            
-            if (!response.getType().equals("backup")) {
-            	brokerAddress = response.getContent().split(":")[0];
-                brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
-                subscriber = new Client(brokerAddress, brokerPort);
-                subscriber.sendReceive(msgBroker);
-                 
-                // guardar address e porta globalmente na classe para nao ter que perguntar sempre se é backup
-                this.backupAddress = brokerAddress;
-                this.backupPort = brokerPort;
-            }
             
             System.out.print("Unsubscribe on backup successful\n\n");
         }
@@ -166,7 +145,7 @@ public class PubSubClient {
         	
         	System.out.println("\nTrying to publish on backup...");
         	
-        	Client subscriber = new Client(backupAddress, backupPort);
+        	Client subscriber = new Client(backupAddress, getBackup(brokerPort));
             subscriber.sendReceive(msgPub);
             
             System.out.print("Publish on backup successful\n\n");
@@ -181,6 +160,14 @@ public class PubSubClient {
         System.out.println("Client stopped...");
         observer.stop();
         clientThread.interrupt();
+    }
+    
+    public int getBackup(int brokerPort) {
+        if(brokerPort == 8080) {
+        	return 8081;
+        }
+        
+        return 8080;  
     }
 
     public void startConsole() {

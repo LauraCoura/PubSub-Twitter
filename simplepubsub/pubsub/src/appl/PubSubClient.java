@@ -28,7 +28,7 @@ public class PubSubClient {
         //otherwise the other constructor must be called
     	this.primaryAddress = "";
 		this.primaryPort = 0;
-		this.backupAddress = "";
+		this.backupAddress = "localhost";
 		this.backupPort = 0;
     }
 
@@ -38,7 +38,7 @@ public class PubSubClient {
         
         this.primaryAddress = "";
 		this.primaryPort = 0;
-		this.backupAddress = "";
+		this.backupAddress = "localhost";
 		this.backupPort = 0;
 		
         observer = new Server(clientPort);
@@ -74,12 +74,12 @@ public class PubSubClient {
             }
         } catch (Exception e) {
         	System.out.println(e);
-        	System.out.println("Trying to subscribe on backup...");  
+        	System.out.println("\nTrying to subscribe on backup...");  
         	
         	Client subscriber = new Client(backupAddress, backupPort);
             subscriber.sendReceive(msgBroker);
             
-            System.out.print("\nSubscribe on backup successful\n");
+            System.out.print("Subscribe on backup successful\n\n");
         }
     }
 
@@ -90,6 +90,14 @@ public class PubSubClient {
         msgBroker.setType("unsub");
         msgBroker.setContent(clientAddress + ":" + clientPort);
         
+        /*
+        if(brokerPort == 8080) {
+        	this.backupPort = 8081;
+        }
+        else {
+        	this.backupPort = 8080;
+        }*/
+        
         try {
         	Client subscriber = new Client(brokerAddress, brokerPort);
             Message response = subscriber.sendReceive(msgBroker);
@@ -99,17 +107,31 @@ public class PubSubClient {
                 brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
                 subscriber = new Client(brokerAddress, brokerPort);
                 subscriber.sendReceive(msgBroker);
+                
+                // guardar address e porta globalmente na classe para nao ter que perguntar sempre se é backup
+                this.primaryAddress = brokerAddress;
+                this.primaryPort = brokerPort;
             }
         } catch (Exception e) {
         	System.out.print(e);
         	
-        	System.out.println("Trying to unsubscribe on backup...");
+        	System.out.println("\nTrying to unsubscribe on backup...");
         	
         	Client subscriber = new Client(backupAddress, backupPort);
-            subscriber.sendReceive(msgBroker);
+        	Message response = subscriber.sendReceive(msgBroker);
             
-            System.out.print("\nUnsubscribe on backup successful\n");
-        	
+            if (!response.getType().equals("backup")) {
+            	brokerAddress = response.getContent().split(":")[0];
+                brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
+                subscriber = new Client(brokerAddress, brokerPort);
+                subscriber.sendReceive(msgBroker);
+                 
+                // guardar address e porta globalmente na classe para nao ter que perguntar sempre se é backup
+                this.backupAddress = brokerAddress;
+                this.backupPort = brokerPort;
+            }
+            
+            System.out.print("Unsubscribe on backup successful\n\n");
         }
     }
 
@@ -132,18 +154,22 @@ public class PubSubClient {
 	            brokerPort = Integer.parseInt(response.getContent().split(":")[1]);
 	            publisher = new Client(brokerAddress, brokerPort);
 	            publisher.sendReceive(msgPub);
+	            
+	            // guardar address e porta globalmente na classe para nao ter que perguntar sempre se é backup
+                this.primaryAddress = brokerAddress;
+                this.primaryPort = brokerPort;
 	        }
         } catch (Exception e) {
         	System.out.println(e);
         	// Teste: rodar portas 8080 e 8081; cancelar 8080
         	// Vai dar erro pq joubert nao conectar a porta 8080
         	
-        	System.out.println("Trying to publish on backup...");
+        	System.out.println("\nTrying to publish on backup...");
         	
         	Client subscriber = new Client(backupAddress, backupPort);
             subscriber.sendReceive(msgPub);
             
-            System.out.print("\nPublish on backup successful\n");
+            System.out.print("Publish on backup successful\n\n");
         }
     }
 
